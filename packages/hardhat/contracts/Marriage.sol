@@ -28,9 +28,18 @@ contract Marriage {
 		string status;
 		uint256 startTime;
 		string ipfsHash;
+		address divorceReporterAddress;
+	}
+
+	struct DivorceDetails {
+		uint256 id;
+		uint256 votesForDivorce;
+		uint256 votesAgainstDivorce;
+		address[] voters;
 	}
 
 	mapping(uint256 => CoupleDetails) public couples;
+	mapping(address => uint256) public userAddressToId;
 
 	constructor() {
 		owner = msg.sender;
@@ -44,11 +53,12 @@ contract Marriage {
 	) public payable {
 		require(
 			msg.sender == _user1address,
-			"Please submit deposit using registered wallet"
+			"Please submit deposit using registered wallet."
 		);
-		require(msg.value >= 5 ether, "Insufficient deposit");
+		require(msg.value >= 5 ether, "Insufficient deposit.");
 
 		coupleCount++;
+		userAddressToId[msg.sender] = coupleCount;
 
 		couples[coupleCount] = CoupleDetails({
 			id: coupleCount,
@@ -60,7 +70,8 @@ contract Marriage {
 			user2depositAmount: 0,
 			status: "pendingDepositFromUser2",
 			startTime: 0,
-			ipfsHash: ""
+			ipfsHash: "",
+			divorceReporterAddress: address(0)
 		});
 
 		emit User1DepositReceived(coupleCount, msg.sender, msg.value);
@@ -70,7 +81,7 @@ contract Marriage {
 	function addUser2(uint256 _id) public payable {
 		require(
 			_id > 0 && _id <= coupleCount,
-			"Please use a valid URL for depositing"
+			"Please use a valid URL for depositing."
 		);
 
 		// Access couple details via storage and id
@@ -78,24 +89,29 @@ contract Marriage {
 
 		require(
 			msg.sender == couple.user2address,
-			"Please submit deposit using registered wallet"
+			"Please submit deposit using registered wallet."
 		);
-		require(msg.value >= 5 ether, "Insufficient deposit");
+		require(msg.value >= 5 ether, "Insufficient deposit.");
 
 		couple.status = "married";
 		couple.user2depositAmount = 5 ether;
+		userAddressToId[msg.sender] = _id;
 
 		emit User2DepositReceived(coupleCount, msg.sender, msg.value);
 	}
 
-	function retrieveDeposit(uint256 _id) public payable {
-		require(_id > 0 && _id <= coupleCount, "Please enter a valid ID");
-
-		CoupleDetails storage couple = couples[_id];
+	function retrieveDeposit() public payable {
+		// To access mapping and save value to a var; will return default value for uint256 (which is 0) if key does not exist, i.e. wallet does not exist
+		uint256 ID = userAddressToId[msg.sender];
+		require(
+			ID != 0,
+			"Please submit retrieval request using registered wallet."
+		);
+		CoupleDetails storage couple = couples[ID];
 
 		require(
 			msg.sender == couple.user1address,
-			"Please submit retrieval request using a registered wallet"
+			"Please submit retrieval request using registered wallet."
 		);
 
 		// Cannot use "==" for direct string comparison; instead use "keccak256" hash function to hash strings and then compare resulting hashes
@@ -107,5 +123,66 @@ contract Marriage {
 
 		// "transfer" better than "send" cause "transfer" will revert tx on failure
 		payable(msg.sender).transfer(5 ether);
+
+		couple.status = "refundedUser1";
+		couple.user1depositAmount = 0;
 	}
+
+	function submitDivorce(string memory _ipfsHash) public {
+		uint256 ID = userAddressToId[msg.sender];
+		require(ID != 0, "Please submit divorce using registered wallet.");
+
+		CoupleDetails storage couple = couples[ID];
+
+		require(
+			keccak256(abi.encodePacked(couple.status)) ==
+				keccak256(abi.encodePacked("married")),
+			"Status not married, hence divorce not applicable."
+		);
+
+		couple.status = "pendingDivorce";
+		couple.startTime = block.timestamp;
+		couple.ipfsHash = _ipfsHash;
+		couple.divorceReporterAddress = msg.sender;
+	}
+
+	function acceptDivorce(uint256 _id) public {
+		require(
+			_id > 0 && _id <= coupleCount,
+			"Please use a valid URL for accepting the divorce."
+		);
+
+		// Access couple details via storage and id
+		CoupleDetails storage couple = couples[_id];
+
+		// Must not be reporter of divorce
+		require(
+			msg.sender != couple.divorceReporterAddress,
+			"Cannot accept divorce because you are the reporter of the divorce!"
+		);
+
+		// Check if current time is within the 7-day period after starttime
+		require(
+			block.timestamp <= couple.startTime + 7 days,
+			"You have exceeded 7 days. Divorce case has been escalated to the jury. Please wait for their decision."
+		);
+
+		// require(
+		// 	keccak256(abi.encodePacked(couple.status)) ==
+		// 		keccak256(abi.encodePacked("pendingDivorce")),
+		// 	"No divorce pending. Please recheck."
+		// );
+
+		couple.status = "divorced";
+		// address reporterOfDivorce;
+		// if (couple.user1address != msg.sender) {
+		// 	reporterOfDivorce = couple.user1address;
+		// } else {
+		// 	reporterOfDivorce = couple.user2address;
+		// }
+		payable(couple.divorceReporterAddress).transfer(2 ether);
+		payable(msg.sender).transfer(1 ether);
+	}
+
+	function disputeDivorce(uint256 _id) public {}
 }
