@@ -34,6 +34,21 @@ describe("Marriage", () => {
   });
 
   describe("Deposit by User1", () => {
+    it("Should revert transaction if depositing wallet is identified as part of another couple", async () => {
+      // Register User1 as couple ID 1
+      await marriage.connect(user1).addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, {
+        value: ethers.parseEther("5"),
+      }),
+        expect(await marriage.coupleCount()).to.equal(1);
+
+      // Register User1 again
+      await expect(
+        marriage
+          .connect(user1)
+          .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") }),
+      ).to.be.revertedWith("Cannot proceed as your wallet is identified as part of another couple.");
+    });
+
     it("Should revert transaction if depositing wallet is not registered", async () => {
       await expect(
         marriage
@@ -89,6 +104,16 @@ describe("Marriage", () => {
       await marriage
         .connect(user1)
         .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
+    });
+
+    it("Should revert transaction if depositing wallet is identified as part of another couple", async () => {
+      // Register User2 as couple ID 1
+      await marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") });
+
+      // Register User2 again
+      await expect(marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") })).to.be.revertedWith(
+        "Cannot proceed as your wallet is identified as part of another couple.",
+      );
     });
 
     it("Should revert transaction if ID is out of range", async () => {
@@ -234,6 +259,12 @@ describe("Marriage", () => {
       await marriage.connect(user1).submitDivorce(IPFSHASH);
     });
 
+    it("Should revert transaction if accepting wallet is not registered", async () => {
+      await expect(marriage.connect(user3).acceptDivorce(1)).to.be.revertedWith(
+        "Please accept divorce using registered wallet.",
+      );
+    });
+
     it("Should revert transaction if ID is out of range", async () => {
       await expect(marriage.connect(user2).acceptDivorce(ID)).to.be.revertedWith(
         "Please use a valid URL for accepting the divorce.",
@@ -262,8 +293,8 @@ describe("Marriage", () => {
     //   await expect(marriage.connect(user1).acceptDivorce(1)).to.be.revertedWith("No divorce pending. Please recheck.");
     // });
 
-    it("Should transfer 1 eth to User2 and 2 eth to User1 if User2 accepts divorce", async () => {
-      // Get initial balances
+    it("Should transfer 1 eth to acceptor and 2 eth to reporter", async () => {
+      // Get initial balances, assumes user1 is the reporter
       const user1balanceBeforeDivorce = await ethers.provider.getBalance(user1.address);
       const user2balanceBeforeDivorce = await ethers.provider.getBalance(user2.address);
       const transaction = await marriage.connect(user2).acceptDivorce(1);
@@ -284,32 +315,6 @@ describe("Marriage", () => {
       );
       expect(user2balancAfterDivorce).to.closeTo(
         user2balanceBeforeDivorce + ethers.parseEther("1") - txCost,
-        ethers.parseEther("0.001"),
-      );
-    });
-
-    it("Should transfer 1 eth to User1 and 2 eth to User2 if User1 accepts divorce", async () => {
-      // Get initial balances
-      const user1balanceBeforeDivorce = await ethers.provider.getBalance(user1.address);
-      const user2balanceBeforeDivorce = await ethers.provider.getBalance(user2.address);
-      const transaction = await marriage.connect(user1).acceptDivorce(1);
-      const receipt = await transaction.wait();
-
-      // Calculate gas cost
-      const gasUsed = receipt.gasUsed;
-      const gasPrice = receipt.gasPrice;
-      const txCost = gasUsed * gasPrice;
-
-      // Get final balances
-      const user1balancAfterDivorce = await ethers.provider.getBalance(user1.address);
-      const user2balancAfterDivorce = await ethers.provider.getBalance(user2.address);
-
-      expect(user1balancAfterDivorce).to.closeTo(
-        user1balanceBeforeDivorce + ethers.parseEther("1") - txCost,
-        ethers.parseEther("0.001"),
-      );
-      expect(user2balancAfterDivorce).to.closeTo(
-        user2balanceBeforeDivorce + ethers.parseEther("2") - txCost,
         ethers.parseEther("0.001"),
       );
     });

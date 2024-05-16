@@ -51,6 +51,13 @@ contract Marriage {
 		bytes32 _user2hashedName,
 		address _user2address
 	) public payable {
+		// Check not duplicated
+		uint256 ID = userAddressToId[msg.sender];
+		require(
+			ID == 0,
+			"Cannot proceed as your wallet is identified as part of another couple."
+		);
+
 		require(
 			msg.sender == _user1address,
 			"Please submit deposit using registered wallet."
@@ -79,6 +86,13 @@ contract Marriage {
 
 	// Mark function as payable to allow it to handle ether transfers
 	function addUser2(uint256 _id) public payable {
+		// Check not duplicated
+		uint256 ID = userAddressToId[msg.sender];
+		require(
+			ID == 0,
+			"Cannot proceed as your wallet is identified as part of another couple."
+		);
+
 		require(
 			_id > 0 && _id <= coupleCount,
 			"Please use a valid URL for depositing."
@@ -147,6 +161,9 @@ contract Marriage {
 	}
 
 	function acceptDivorce(uint256 _id) public {
+		uint256 ID = userAddressToId[msg.sender];
+		require(ID != 0, "Please accept divorce using registered wallet.");
+
 		require(
 			_id > 0 && _id <= coupleCount,
 			"Please use a valid URL for accepting the divorce."
@@ -167,19 +184,7 @@ contract Marriage {
 			"You have exceeded 7 days. Divorce case has been escalated to the jury. Please wait for their decision."
 		);
 
-		// require(
-		// 	keccak256(abi.encodePacked(couple.status)) ==
-		// 		keccak256(abi.encodePacked("pendingDivorce")),
-		// 	"No divorce pending. Please recheck."
-		// );
-
 		couple.status = "divorced";
-		// address reporterOfDivorce;
-		// if (couple.user1address != msg.sender) {
-		// 	reporterOfDivorce = couple.user1address;
-		// } else {
-		// 	reporterOfDivorce = couple.user2address;
-		// }
 		payable(couple.divorceReporterAddress).transfer(2 ether);
 		payable(msg.sender).transfer(1 ether);
 	}
