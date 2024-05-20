@@ -206,7 +206,7 @@ contract Marriage is Ownable {
 			voters: new address[](0)
 		});
 		// Enable jury whitelist
-		_enableWhitelist();
+		_enableWhitelist(_id);
 	}
 
 	// Functionality related to voting
@@ -255,12 +255,12 @@ contract Marriage is Ownable {
 
 	// Helper Functions
 	// ********************************
-	function _enableWhitelist() internal {
-		jury.enableWhitelist();
+	function _enableWhitelist(uint256 _id) internal {
+		jury.enableWhitelist(_id);
 	}
 
-	function _disableWhitelist() internal {
-		jury.disableWhitelist();
+	function _disableWhitelist(uint256 _id) internal {
+		jury.disableWhitelist(_id);
 	}
 
 	function addToWhitelist(address _address) public onlyOwner {
@@ -288,7 +288,7 @@ contract Marriage is Ownable {
 	}
 
 	function tallyVotesByJury(uint256 _id) public {
-		require(jury.enabled() == true, "Voting has ended.");
+		require(jury.isJuryEnabled(_id) == true, "Voting has ended.");
 		DisputedDivorceDetails storage divorce = disputedDivorces[_id];
 		CoupleDetails storage couple = couples[_id];
 		if (divorce.votesForDivorce > divorce.votesAgainstDivorce) {
@@ -305,6 +305,6 @@ contract Marriage is Ownable {
 			couple.user2depositAmount = 0;
 		}
 		// Disable jury whitelist
-		_disableWhitelist();
+		_disableWhitelist(_id);
 	}
 }

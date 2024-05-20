@@ -367,7 +367,7 @@ describe("Marriage", () => {
 
     it("Should enable jury whitelist when addDisputeDivorce is called", async () => {
       await marriage.connect(user2).addDisputeDivorce(1);
-      expect(await jury.enabled()).to.equal(true);
+      expect(await jury.isJuryEnabled(1)).to.equal(true);
     });
   });
 
@@ -470,13 +470,13 @@ describe("Marriage", () => {
       // expect(await jury.getWhitelistedCount()).to.equal("5");
       let couple = await marriage.couples(1);
       expect(couple.status).to.equal("pendingJuryToResolveDispute");
-      expect(await jury.enabled()).to.equal(true);
+      expect(await jury.isJuryEnabled(1)).to.equal(true);
 
       // Status after 2 voters to remain unchanged as quorum not reached
       await marriage.connect(user6).recordVotesByJury(1, 1);
       couple = await marriage.couples(1);
       expect(couple.status).to.equal("pendingJuryToResolveDispute");
-      expect(await jury.enabled()).to.equal(true);
+      expect(await jury.isJuryEnabled(1)).to.equal(true);
 
       // a) Changing above votes to 1, 1, and vote 3 as 0, status after 3 votes to change to "juryVotesForDivorce, penalized disputer and refunded reporter"
       // await marriage.connect(user7).recordVotesByJury(1, 0);
@@ -487,7 +487,7 @@ describe("Marriage", () => {
       await marriage.connect(user7).recordVotesByJury(1, 0);
       couple = await marriage.couples(1);
       expect(couple.status).to.equal("juryVotesAgainstDivorce, penalized reporter and refunded disputer");
-      expect(await jury.enabled()).to.equal(false);
+      expect(await jury.isJuryEnabled(1)).to.equal(false);
 
       // If 4th voter tried to vote after quorum has reached (and hence jury has been disabled), to be reverted with error message
       await expect(marriage.connect(user8).recordVotesByJury(1, 0)).to.be.revertedWith("Voting has ended.");

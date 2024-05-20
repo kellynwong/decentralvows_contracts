@@ -3,12 +3,14 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-// need to whitelist by couple id
-
 contract Jury is Ownable {
-	mapping(address => bool) public whitelist;
+	// State variables
 	bool public enabled = false;
 	uint256 public whitelistedCount = 0;
+
+	// Mappings
+	mapping(address => bool) public whitelist;
+	mapping(uint256 => bool) public isJuryEnabled;
 
 	function addToWhitelist(address account) public onlyOwner {
 		// Check if the address is already whitelisted
@@ -32,12 +34,12 @@ contract Jury is Ownable {
 	}
 
 	// Enable/Disable
-	function enableWhitelist() public onlyOwner {
-		enabled = true;
+	function enableWhitelist(uint256 _id) public onlyOwner {
+		isJuryEnabled[_id] = true;
 	}
 
-	function disableWhitelist() public onlyOwner {
-		enabled = false;
+	function disableWhitelist(uint256 _id) public onlyOwner {
+		isJuryEnabled[_id] = false;
 	}
 
 	// Get count of jury whitelisted
