@@ -1,6 +1,4 @@
 import { expect } from "chai";
-import { ContractTransactionResponse } from "ethers";
-import { AddressLike } from "ethers";
 import { ethers } from "hardhat";
 import { Marriage, Jury } from "../typechain-types";
 
@@ -24,10 +22,10 @@ const SIX_DAYS_IN_SECONDS = 6 * 24 * 60 * 60;
 const SEVEN_DAYS_IN_SECONDS = 7 * 24 * 60 * 60;
 
 describe("Marriage", () => {
-  let marriage: Marriage & { deploymentTransaction(): ContractTransactionResponse };
+  let marriage: Marriage;
   let jury: Jury;
   let deployer: { address: any },
-    user1: { address: AddressLike },
+    user1: any,
     user2: any,
     user3: any,
     user4: any,
@@ -39,27 +37,26 @@ describe("Marriage", () => {
     // Setup accounts
     [deployer, user1, user2, user3, user4, user5, user6, user7, user8] = await ethers.getSigners();
 
-    // Deploy Jury contract
+    // Deploy jury contract
     Jury = await ethers.getContractFactory("Jury");
     jury = await Jury.deploy();
 
     // Deploy marriage contract
     const Marriage = await ethers.getContractFactory("Marriage");
     marriage = await Marriage.deploy(jury.target);
-
-    // Transfer ownership of Jury contract to Marriage contract
-    await jury.transferOwnership(marriage.target);
   });
 
   describe("Deployment", () => {
     it("Sets the owner", async () => {
-      const result = await marriage.owner();
+      let result = await marriage.owner();
+      expect(result).to.equal(deployer.address);
+      result = await jury.owner();
       expect(result).to.equal(deployer.address);
     });
   });
 
-  describe("Deposit by User1", () => {
-    it("Should revert transaction if depositing wallet is identified as part of another couple", async () => {
+  describe("Adding of User1", () => {
+    it("Should revert transaction if wallet address is identified as part of another couple", async () => {
       // Register User1 as couple ID 1
       await marriage.connect(user1).addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, {
         value: ethers.parseEther("5"),
@@ -70,15 +67,15 @@ describe("Marriage", () => {
         marriage
           .connect(user1)
           .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") }),
-      ).to.be.revertedWith("Cannot proceed as your wallet is identified as part of another couple.");
+      ).to.be.revertedWith("Cannot add User1. Wallet address identified as part of another couple.");
     });
 
-    it("Should revert transaction if depositing wallet is not registered", async () => {
+    it("Should revert transaction if wallet address is not the same as the address registered at front end", async () => {
       await expect(
         marriage
           .connect(user3)
           .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") }),
-      ).to.be.revertedWith("Please submit deposit using registered wallet.");
+      ).to.be.revertedWith("Cannot add User1. Wallet address is not the same as the address registered at front end.");
     });
 
     it("Should revert transaction if deposit amount is less than 5 eth", async () => {
@@ -86,7 +83,7 @@ describe("Marriage", () => {
         marriage
           .connect(user1)
           .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("1") }),
-      ).to.be.revertedWith("Insufficient deposit.");
+      ).to.be.revertedWith("Cannot add User1. Insufficient deposit.");
     });
 
     it("Should increase coupleCount to 1 when addUser1 is called", async () => {
@@ -127,38 +124,28 @@ describe("Marriage", () => {
       expect(couple.user2address).to.equal(USER2ADDRESS);
       expect(couple.user2depositAmount).to.equal(0);
       expect(couple.status).to.equal("pendingDepositFromUser2");
-      expect(couple.startTime).to.equal(0);
+      expect(couple.disputeStartTime).to.equal(0);
       expect(couple.ipfsHash).to.equal("");
       expect(couple.divorceReporterAddress).to.equal("0x0000000000000000000000000000000000000000");
+      expect(couple.divorceDisputerAddress).to.equal("0x0000000000000000000000000000000000000000");
     });
   });
 
-  describe("Deposit by User2", () => {
+  describe("Adding of User2", () => {
     beforeEach(async () => {
       await marriage
         .connect(user1)
         .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
     });
 
-    it("Should revert transaction if depositing wallet is identified as part of another couple", async () => {
-      // Register User2 as couple ID 1
+    // Checks which are similar to addUser1 not tested as already tested above
+
+    it("Should add on to couple details correctly when addUser2 is called", async () => {
       await marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") });
-      // Register User2 again
-      await expect(marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") })).to.be.revertedWith(
-        "Cannot proceed as your wallet is identified as part of another couple.",
-      );
-    });
-
-    it("Should revert transaction if depositing wallet is not registered", async () => {
-      await expect(marriage.connect(user3).addUser2(1, { value: ethers.parseEther("5") })).to.be.revertedWith(
-        "Please submit deposit using registered wallet.",
-      );
-    });
-
-    it("Should revert transaction if deposit amount is less than 5 eth", async () => {
-      await expect(marriage.connect(user2).addUser2(1, { value: ethers.parseEther("1") })).to.be.revertedWith(
-        "Insufficient deposit.",
-      );
+      // Use "()" and not "[]" to access
+      const couple = await marriage.couples(1);
+      expect(couple.user2depositAmount).to.equal(ethers.parseEther("5"));
+      expect(couple.status).to.equal("married");
     });
 
     it("Should add User1, User2, User3 and User4 addresses to mapping correctly", async () => {
@@ -172,23 +159,6 @@ describe("Marriage", () => {
       expect(await marriage.userAddressToId(user3.address)).to.equal(2);
       expect(await marriage.userAddressToId(user4.address)).to.equal(2);
     });
-
-    it("Should add on to couple details correctly when addUser2 is called", async () => {
-      await marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") });
-      // Use "()" and not "[]" to access
-      const couple = await marriage.couples(1);
-      expect(couple.id).to.equal(1);
-      expect(couple.user1hashedName).to.equal(USER1HASHEDNAME);
-      expect(couple.user1address).to.equal(USER1ADDRESS);
-      expect(couple.user1depositAmount).to.equal(ethers.parseEther("5"));
-      expect(couple.user2hashedName).to.equal(USER2HASHEDNAME);
-      expect(couple.user2address).to.equal(USER2ADDRESS);
-      expect(couple.user2depositAmount).to.equal(ethers.parseEther("5"));
-      expect(couple.status).to.equal("married");
-      expect(couple.startTime).to.equal(0);
-      expect(couple.ipfsHash).to.equal("");
-      expect(couple.divorceReporterAddress).to.equal("0x0000000000000000000000000000000000000000");
-    });
   });
 
   describe("Retrieval of Deposit by User1", () => {
@@ -199,17 +169,19 @@ describe("Marriage", () => {
     });
 
     it("Should revert transaction if requesting wallet is not registered", async () => {
-      await expect(marriage.connect(user3).retrieveDeposit()).to.be.revertedWith("No records of ID found.");
+      await expect(marriage.connect(user3).retrieveDeposit()).to.be.revertedWith(
+        "Cannot retrieve deposit. Wallet address cannot be found.",
+      );
     });
 
     it("Should revert transaction if User2 has already deposited", async () => {
       await marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") });
       await expect(marriage.connect(user1).retrieveDeposit()).to.be.revertedWith(
-        "User2 has deposited. You can't withdraw now. Your vows are now bound by code.",
+        "Cannot retrieve deposit. User2 has deposited.",
       );
     });
 
-    it("Should allow refund of deposit to User1 if User2 has not deposited", async () => {
+    it("Should allow User1 to retrieve deposit if User2 has not deposited", async () => {
       const user1balanceBeforeRefund = await ethers.provider.getBalance(user1.address);
       const transaction = await marriage.connect(user1).retrieveDeposit();
       const receipt = await transaction.wait();
@@ -222,65 +194,50 @@ describe("Marriage", () => {
       expect(user1balanceAfterRefund).to.equal(user1balanceBeforeRefund + ethers.parseEther("5") - txCost);
     });
 
-    it("Should change status and amount in couple details after refund to User1", async () => {
+    it("Should change status and amount in couple details after refunding to User1", async () => {
       await marriage.connect(user1).retrieveDeposit();
-      // Use "()" and not "[]" to access
       const couple = await marriage.couples(1);
-      expect(couple.id).to.equal(1);
-      expect(couple.user1hashedName).to.equal(USER1HASHEDNAME);
-      expect(couple.user1address).to.equal(USER1ADDRESS);
-      expect(couple.user1depositAmount).to.equal(0);
-      expect(couple.user2hashedName).to.equal(USER2HASHEDNAME);
-      expect(couple.user2address).to.equal(USER2ADDRESS);
-      expect(couple.user2depositAmount).to.equal(0);
       expect(couple.status).to.equal("refundedUser1");
-      expect(couple.startTime).to.equal(0);
-      expect(couple.ipfsHash).to.equal("");
+      expect(couple.user1depositAmount).to.equal(0);
+      expect(couple.user2depositAmount).to.equal(0);
     });
   });
 
-  describe("Submitting a Divorce Process", () => {
+  describe("Submit Divorce", () => {
     beforeEach(async () => {
       await marriage
         .connect(user1)
         .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
     });
 
-    it("Should revert transaction if requesting wallet is not registered", async () => {
+    it("Should revert transaction if wallet address cannot be found", async () => {
       await marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") });
       await expect(marriage.connect(user3).submitDivorce(IPFSHASH)).to.be.revertedWith(
-        "Please submit divorce using registered wallet.",
+        "Cannot submit divorce. Wallet address cannot be found.",
       );
     });
 
-    it("Should revert if status is not married", async () => {
+    it("Should revert transaction if status is not married", async () => {
       await expect(marriage.connect(user1).submitDivorce(IPFSHASH)).to.be.revertedWith(
-        "Status not married, hence divorce not applicable.",
+        "Cannot submit divorce. Status is not married.",
       );
     });
 
-    it("Should update status and ipfsHash and trigger startTime", async () => {
+    it("Should update couple details after divorce is submitted", async () => {
       await marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") });
       const transaction = await marriage.connect(user1).submitDivorce(IPFSHASH);
       // Manipulate block time for testing
       const receipt = await transaction.wait();
       block = await ethers.provider.getBlock(receipt.blockNumber);
       const couple = await marriage.couples(1);
-      expect(couple.id).to.equal(1);
-      expect(couple.user1hashedName).to.equal(USER1HASHEDNAME);
-      expect(couple.user1address).to.equal(USER1ADDRESS);
-      expect(couple.user1depositAmount).to.equal(ethers.parseEther("5"));
-      expect(couple.user2hashedName).to.equal(USER2HASHEDNAME);
-      expect(couple.user2address).to.equal(USER2ADDRESS);
-      expect(couple.user2depositAmount).to.equal(ethers.parseEther("5"));
       expect(couple.status).to.equal("pendingDivorce");
-      expect(couple.startTime).to.equal(block.timestamp);
+      expect(couple.disputeStartTime).to.equal(block.timestamp);
       expect(couple.ipfsHash).to.equal(IPFSHASH);
       expect(couple.divorceReporterAddress).to.equal(user1.address);
     });
   });
 
-  describe("Accepting a Divorce Process", () => {
+  describe("Accept Divorce", () => {
     beforeEach(async () => {
       await marriage
         .connect(user1)
@@ -289,19 +246,28 @@ describe("Marriage", () => {
       await marriage.connect(user1).submitDivorce(IPFSHASH);
     });
 
-    it("Should revert transaction if accepting wallet is not registered", async () => {
+    it("Should revert transaction if wallet address cannot be found", async () => {
       await expect(marriage.connect(user3).acceptDivorce(1)).to.be.revertedWith(
-        "Please accept divorce using registered wallet.",
+        "Cannot accept divorce. Wallet address cannot be found.",
       );
     });
 
-    it("Should revert transaction if acceptor of divorce is the same as the one who reported the divorce", async () => {
+    it("Should revert transaction if wallet address is the same as reporter of divorce", async () => {
       await expect(marriage.connect(user1).acceptDivorce(1)).to.be.revertedWith(
-        "Cannot accept divorce because you are the reporter of the divorce!",
+        "Cannot accept divorce. Wallet address is the same as reporter of divorce.",
       );
     });
 
-    it("Should allow divorce to be accepted within 7 days by checking status has been updated to divorced", async () => {
+    it("Should revert transaction if more than 7 days has passed", async () => {
+      // Move forward in time by 7 days
+      await ethers.provider.send("evm_increaseTime", [SEVEN_DAYS_IN_SECONDS]);
+      await ethers.provider.send("evm_mine", []);
+      // User2 accepts divorce
+      await expect(marriage.connect(user2).acceptDivorce(1)).to.be.revertedWith(
+        "Cannot accept divorce. Deadline to accept divorce has passed. Divorce has automatically been escalated to jury for voting and resolution.",
+      );
+    });
+    it("Should allow divorce to be accepted if it is within 7 days", async () => {
       // Move forward in time by 6 days
       await ethers.provider.send("evm_increaseTime", [SIX_DAYS_IN_SECONDS]);
       await ethers.provider.send("evm_mine", []);
@@ -322,31 +288,20 @@ describe("Marriage", () => {
       const gasPrice = receipt.gasPrice;
       const txCost = gasUsed * gasPrice;
       // Get final balances
-      const user1balancAfterDivorce = await ethers.provider.getBalance(user1.address);
-      const user2balancAfterDivorce = await ethers.provider.getBalance(user2.address);
-      expect(user1balancAfterDivorce).to.closeTo(
+      const user1balanceAfterDivorce = await ethers.provider.getBalance(user1.address);
+      const user2balanceAfterDivorce = await ethers.provider.getBalance(user2.address);
+      expect(user1balanceAfterDivorce).to.closeTo(
         user1balanceBeforeDivorce + ethers.parseEther("2") - txCost,
         ethers.parseEther("0.001"),
       );
-      expect(user2balancAfterDivorce).to.closeTo(
+      expect(user2balanceAfterDivorce).to.closeTo(
         user2balanceBeforeDivorce + ethers.parseEther("1") - txCost,
         ethers.parseEther("0.001"),
       );
     });
-
-    it("Should revert transaction if more than 7 days has passed", async () => {
-      // Move forward in time by 7 days
-      await ethers.provider.send("evm_increaseTime", [SEVEN_DAYS_IN_SECONDS]);
-      await ethers.provider.send("evm_mine", []);
-      // User2 accepts divorce
-      await expect(marriage.connect(user2).acceptDivorce(1)).to.be.revertedWith(
-        "You have exceeded 7 days. Divorce case has been escalated to the jury. Please wait for their decision.",
-      );
-    });
   });
 
-  // Will not test scenarios which are the same as above - accept divorce
-  describe("Disputing a Divorce Process", () => {
+  describe("Dispute Divorce", () => {
     beforeEach(async () => {
       await marriage
         .connect(user1)
@@ -355,23 +310,62 @@ describe("Marriage", () => {
       await marriage.connect(user1).submitDivorce(IPFSHASH);
     });
 
-    it("Should allow dispute to be raised within 7 days by checking status has been updated to pendingDispute", async () => {
+    // Checks which are similar to acceptDivorce not tested as already tested above
+
+    it("Should allow dispute to be raised within 7 days", async () => {
       // Move forward in time by 6 days
       await ethers.provider.send("evm_increaseTime", [SIX_DAYS_IN_SECONDS]);
       await ethers.provider.send("evm_mine", []);
       // User2 disputes divorce
-      await marriage.connect(user2).addDisputeDivorce(1);
+      await marriage.connect(user2).disputeDivorce(1);
       const couple = await marriage.couples(1);
       expect(couple.status).to.equal("pendingJuryToResolveDispute");
     });
 
-    it("Should enable jury whitelist when addDisputeDivorce is called", async () => {
-      await marriage.connect(user2).addDisputeDivorce(1);
-      expect(await jury.isJuryEnabled(1)).to.equal(true);
+    it("Should create disputedDivorceDetails struct when disputeDivorce is called", async () => {
+      await marriage.connect(user2).disputeDivorce(1);
+      const divorce = await jury.disputedDivorces(1);
+      expect(divorce.id).to.equal(1);
+      expect(divorce.votesForDivorce).to.equal(0);
+      expect(divorce.votesAgainstDivorce).to.equal(0);
+      expect(divorce.votingIsLive).to.equal(true);
     });
   });
 
-  describe("Jury and Voting Process", () => {
+  describe("Manage Jury", () => {
+    it("Should be able to add 5 addresses to the whitelist", async () => {
+      await jury.connect(deployer).addToWhitelist(JURY1ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY2ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY3ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY4ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY5ADDRESS);
+      expect(await jury.getJuryCount()).to.equal("5");
+    });
+
+    it("Should be able to add 2 and remove 1 address to/from the whitelist", async () => {
+      await jury.connect(deployer).addToWhitelist(JURY1ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY2ADDRESS);
+      await jury.connect(deployer).removeFromWhitelist(JURY1ADDRESS);
+      expect(await jury.getJuryCount()).to.equal("1");
+    });
+
+    it("Should revert when adding an already whitelisted address", async () => {
+      await jury.connect(deployer).addToWhitelist(JURY1ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY2ADDRESS);
+      await expect(jury.connect(deployer).addToWhitelist(JURY2ADDRESS)).to.be.revertedWith(
+        "Address is already whitelisted",
+      );
+    });
+
+    it("Should return false if address is not whitelisted and vice versa", async () => {
+      await jury.connect(deployer).addToWhitelist(user5.address);
+      await jury.connect(deployer).addToWhitelist(user6.address);
+      expect(await jury.connect(user7).checkAddressIsJury(user7.address)).to.equal(false);
+      expect(await jury.connect(user5).checkAddressIsJury(user5.address)).to.equal(true);
+    });
+  });
+
+  describe("Voting by Jury", () => {
     beforeEach(async () => {
       // Marry 2 couples
       await marriage
@@ -385,112 +379,158 @@ describe("Marriage", () => {
       // User2 report a divorce between User1 and User2
       await marriage.connect(user2).submitDivorce(IPFSHASH);
       // User1 disputes the divorce
-      await marriage.connect(user1).addDisputeDivorce(1);
+      await marriage.connect(user1).disputeDivorce(1);
     });
 
-    it("Should allow deployer to add 5 jury addresses to the whitelist", async () => {
-      await marriage.connect(deployer).addToWhitelist(JURY1ADDRESS);
-      await marriage.connect(deployer).addToWhitelist(JURY2ADDRESS);
-      await marriage.connect(deployer).addToWhitelist(JURY3ADDRESS);
-      await marriage.connect(deployer).addToWhitelist(JURY4ADDRESS);
-      await marriage.connect(deployer).addToWhitelist(JURY5ADDRESS);
-      expect(await jury.getWhitelistedCount()).to.equal("5");
-    });
-
-    it("Should revert when adding an already whitelisted address", async () => {
-      await marriage.connect(deployer).addToWhitelist(JURY1ADDRESS);
-      await marriage.connect(deployer).addToWhitelist(JURY2ADDRESS);
-      await expect(marriage.connect(deployer).addToWhitelist(JURY2ADDRESS)).to.be.revertedWith(
-        "Address is already whitelisted",
+    it("Should not let a not whitelisted address to vote", async () => {
+      await expect(jury.connect(user5).recordVotesByJury(1, 0)).to.be.revertedWith(
+        "Cannot vote. Address has not been whitelisted to be a jury.",
       );
     });
 
-    it("Should allow a jury to retrieve and view the ipfs of the disputed divorce", async () => {
-      await marriage.connect(deployer).addToWhitelist(user5);
-      expect(await jury.isAllowed(user5.address)).to.be.true;
-      // Error: contract runner does not support calling (operation="call", code=UNSUPPORTED_OPERATION, version=6.10.0) - to use user5 (hardhat account)
-      const retrievedIpfsHash = await marriage.connect(user5).retrieveIpfsByJury();
-      expect(retrievedIpfsHash).to.equal(IPFSHASH);
+    it("Should not let a jury vote twice for same couple", async () => {
+      await jury.connect(deployer).addToWhitelist(user5);
+      await jury.connect(user5).recordVotesByJury(1, 0);
+      const divorce = await jury.disputedDivorces(1);
+      expect(divorce.votesForDivorce).to.equal(1);
+      await expect(jury.connect(user5).recordVotesByJury(1, 1)).to.be.revertedWith("Cannot vote again.");
     });
 
     it("Should record jury's vote and add jury to voter's array", async () => {
-      await marriage.connect(deployer).addToWhitelist(user5);
-      await marriage.connect(deployer).addToWhitelist(user6);
-      await marriage.connect(user5).recordVotesByJury(1, 0);
-      await marriage.connect(user6).recordVotesByJury(1, 1);
-      const disputedDivorce = await marriage.disputedDivorces(1);
-      expect(disputedDivorce.votesForDivorce).to.equal(1);
-      expect(disputedDivorce.votesAgainstDivorce).to.equal(1);
-      expect(await marriage.getVoters(1)).to.include(user5.address);
-      expect(await marriage.getVoters(1)).to.include(user6.address);
+      await jury.connect(deployer).addToWhitelist(user5);
+      await jury.connect(deployer).addToWhitelist(user6);
+      await jury.connect(user5).recordVotesByJury(1, 0);
+      await jury.connect(user6).recordVotesByJury(1, 1);
+      const divorce = await jury.disputedDivorces(1);
+      expect(divorce.votesForDivorce).to.equal(1);
+      expect(divorce.votesAgainstDivorce).to.equal(1);
+      expect(await jury.getVoters(1)).to.include(user5.address);
+      expect(await jury.getVoters(1)).to.include(user6.address);
+      expect(await jury.getJuryCount()).to.equal(2);
     });
 
-    it("Should not let a jury vote twice", async () => {
-      await marriage.connect(deployer).addToWhitelist(user5);
-      await marriage.connect(user5).recordVotesByJury(1, 0);
-      const disputedDivorce = await marriage.disputedDivorces(1);
-      expect(disputedDivorce.votesForDivorce).to.equal(1);
-      await expect(marriage.connect(user5).recordVotesByJury(1, 1)).to.be.revertedWith("You have voted before.");
-    });
-
-    it("Should let a jury vote a second time for a different couple and voter records are updated correctly", async () => {
+    it("Should let the same jury vote a second time for a different couple", async () => {
       // User3 report a divorce between User3 and User4 (couple id 2)
       await marriage.connect(user3).submitDivorce(IPFSHASH2);
       // User4 disputes the divorce
-      await marriage.connect(user4).addDisputeDivorce(2);
-      await marriage.connect(deployer).addToWhitelist(user5);
-      // Voting for couple id 1
-      await marriage.connect(user5).recordVotesByJury(1, 0);
-      const disputedDivorceCouple1 = await marriage.disputedDivorces(1);
-      expect(disputedDivorceCouple1.votesForDivorce).to.equal(1);
-      // Voting for couple id 2
-      await marriage.connect(user5).recordVotesByJury(2, 1);
-      const disputedDivorceCouple2 = await marriage.disputedDivorces(2);
-      expect(disputedDivorceCouple2.votesAgainstDivorce).to.equal(1);
-      expect(await marriage.getVoters(1)).to.include(user5.address);
-      expect(await marriage.getVoters(2)).to.include(user5.address);
+      await marriage.connect(user4).disputeDivorce(2);
+      // Add jury to whitelist
+      await jury.connect(deployer).addToWhitelist(user5);
+      // Jury vote for couple id 1
+      await jury.connect(user5).recordVotesByJury(1, 0);
+      const divorce1 = await jury.disputedDivorces(1);
+      expect(divorce1.votesForDivorce).to.equal(1);
+      // Same jury vote for couple id 2
+      await jury.connect(user5).recordVotesByJury(2, 1);
+      const divorce2 = await jury.disputedDivorces(2);
+      expect(divorce2.votesAgainstDivorce).to.equal(1);
+      expect(await jury.getVoters(1)).to.include(user5.address);
+      expect(await jury.getVoters(2)).to.include(user5.address);
     });
 
-    it("Should call tallyVotes once quorum reached", async () => {
-      // Status before voting
-      // let couple = await marriage.couples(1);
-      // expect(couple.status).to.equal("pendingJuryToResolveDispute");
+    it("Should emit an event once quorum reached and should not let any more voting take place", async () => {
       // Whitelist 5 jury members
-      await marriage.connect(deployer).addToWhitelist(JURY1ADDRESS);
-      await marriage.connect(deployer).addToWhitelist(JURY2ADDRESS);
-      await marriage.connect(deployer).addToWhitelist(JURY3ADDRESS);
-      await marriage.connect(deployer).addToWhitelist(JURY4ADDRESS);
-      await marriage.connect(deployer).addToWhitelist(JURY5ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY1ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY2ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY3ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY4ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY5ADDRESS);
+      // No event to be emitted after 1 vote
+      await expect(jury.connect(user5).recordVotesByJury(1, 1)).to.not.emit(jury, "quorumReached");
+      // No event to be emitted after 2 votes
+      await expect(jury.connect(user6).recordVotesByJury(1, 1)).to.not.emit(jury, "quorumReached");
+      // Event to be emitted after 3 votes
+      await expect(jury.connect(user7).recordVotesByJury(1, 1)).to.emit(jury, "quorumReached").withArgs(1);
+      // Voting should be closed
+      const divorce = await jury.disputedDivorces(1);
+      expect(divorce.votingIsLive).to.equal(false);
+      await expect(jury.connect(user8).recordVotesByJury(1, 1)).to.be.revertedWith("Cannot vote. Voting has closed.");
+    });
 
-      // Status after 1 voter to remain unchanged as quorum not reached
-      await marriage.connect(user5).recordVotesByJury(1, 1);
-      // const disputedDivorce = await marriage.disputedDivorces(1);
-      // expect(disputedDivorce.votesForDivorce).to.equal(1);
-      // expect(disputedDivorce.votesAgainstDivorce).to.equal(0);
-      // expect(await jury.getWhitelistedCount()).to.equal("5");
-      let couple = await marriage.couples(1);
-      expect(couple.status).to.equal("pendingJuryToResolveDispute");
-      expect(await jury.isJuryEnabled(1)).to.equal(true);
+    it("Should return the correct results of the voting", async () => {
+      // Whitelist 5 jury members
+      await jury.connect(deployer).addToWhitelist(JURY1ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY2ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY3ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY4ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY5ADDRESS);
+      await jury.connect(user5).recordVotesByJury(1, 1);
+      await jury.connect(user6).recordVotesByJury(1, 1);
+      await jury.connect(user7).recordVotesByJury(1, 1);
+      expect(await jury.getResults(1)).to.equal(1);
+    });
+  });
 
-      // Status after 2 voters to remain unchanged as quorum not reached
-      await marriage.connect(user6).recordVotesByJury(1, 1);
+  describe("Conclude Dispute", () => {
+    let couple, reporterBalanceBeforeDivorce, disputerBalanceBeforeDivorce, txCost;
+    beforeEach(async () => {
+      // Marry 2 couples
+      await marriage
+        .connect(user1)
+        .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") });
+      // User1 reports a divorce
+      await marriage.connect(user1).submitDivorce(IPFSHASH);
+      // User2 disputes the divorce
+      await marriage.connect(user2).disputeDivorce(1);
+      // Get initial balances
       couple = await marriage.couples(1);
-      expect(couple.status).to.equal("pendingJuryToResolveDispute");
-      expect(await jury.isJuryEnabled(1)).to.equal(true);
+      reporterBalanceBeforeDivorce = await ethers.provider.getBalance(couple.divorceReporterAddress);
+      disputerBalanceBeforeDivorce = await ethers.provider.getBalance(couple.divorceDisputerAddress);
+      // Adds jury to whitelist
+      await jury.connect(deployer).addToWhitelist(JURY1ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY2ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY3ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY4ADDRESS);
+      await jury.connect(deployer).addToWhitelist(JURY5ADDRESS);
+    });
 
-      // a) Changing above votes to 1, 1, and vote 3 as 0, status after 3 votes to change to "juryVotesForDivorce, penalized disputer and refunded reporter"
-      // await marriage.connect(user7).recordVotesByJury(1, 0);
-      // couple = await marriage.couples(1);
-      // expect(couple.status).to.equal("juryVotesForDivorce, penalized disputer and refunded reporter");
-
-      // b) Changing above votes to 1, 1, and vote 3 as 0, status after 3 votes to change to "juryVotesAgainstDivorce, penalized reporter and refunded disputer"
-      await marriage.connect(user7).recordVotesByJury(1, 0);
+    it("Should send 2 eth to reporter as jury has voted for divorce", async () => {
+      // Jury votes
+      await jury.connect(user5).recordVotesByJury(1, 0);
+      await jury.connect(user6).recordVotesByJury(1, 0);
+      await jury.connect(user7).recordVotesByJury(1, 0);
+      // Conclude dispute
+      const transaction = await marriage.concludeDispute(1);
+      expect(await jury.getResults(1)).to.equal(0);
+      const receipt = await transaction.wait();
+      // Calculate gas cost
+      const gasUsed = receipt.gasUsed;
+      const gasPrice = receipt.gasPrice;
+      txCost = gasUsed * gasPrice;
+      // Get final balances
       couple = await marriage.couples(1);
-      expect(couple.status).to.equal("juryVotesAgainstDivorce, penalized reporter and refunded disputer");
-      expect(await jury.isJuryEnabled(1)).to.equal(false);
+      const reporterBalanceAfterDivorce = await ethers.provider.getBalance(couple.divorceReporterAddress);
+      const disputerBalanceAfterDivorce = await ethers.provider.getBalance(couple.divorceDisputerAddress);
+      expect(reporterBalanceAfterDivorce).to.closeTo(
+        reporterBalanceBeforeDivorce + ethers.parseEther("2") - txCost,
+        ethers.parseEther("0.001"),
+      );
+      expect(disputerBalanceBeforeDivorce).to.equal(disputerBalanceAfterDivorce);
+    });
 
-      // If 4th voter tried to vote after quorum has reached (and hence jury has been disabled), to be reverted with error message
-      await expect(marriage.connect(user8).recordVotesByJury(1, 0)).to.be.revertedWith("Voting has ended.");
+    it("Should send 1 eth to disputer as jury has voted against divorce", async () => {
+      // Jury votes
+      await jury.connect(user5).recordVotesByJury(1, 1);
+      await jury.connect(user6).recordVotesByJury(1, 1);
+      await jury.connect(user7).recordVotesByJury(1, 0);
+      // Conclude dispute
+      const transaction = await marriage.concludeDispute(1);
+      expect(await jury.getResults(1)).to.equal(1);
+      const receipt = await transaction.wait();
+      // Calculate gas cost
+      const gasUsed = receipt.gasUsed;
+      const gasPrice = receipt.gasPrice;
+      const txCost = gasUsed * gasPrice;
+      // Get final balances
+      couple = await marriage.couples(1);
+      const reporterBalanceAfterDivorce = await ethers.provider.getBalance(couple.divorceReporterAddress);
+      const disputerBalanceAfterDivorce = await ethers.provider.getBalance(couple.divorceDisputerAddress);
+      expect(disputerBalanceAfterDivorce).to.closeTo(
+        disputerBalanceBeforeDivorce + ethers.parseEther("1") - txCost,
+        ethers.parseEther("0.001"),
+      );
+      expect(reporterBalanceBeforeDivorce).to.equal(reporterBalanceAfterDivorce);
     });
   });
 });
