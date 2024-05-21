@@ -33,11 +33,11 @@ contract Marriage is Ownable {
 		uint256 startTime;
 		string ipfsHash;
 		address divorceReporterAddress;
-		address divorceDisputerAddress;
 	}
 
 	struct DisputedDivorceDetails {
 		uint256 id;
+		address divorceDisputerAddress;
 		uint256 votesForDivorce;
 		uint256 votesAgainstDivorce;
 		address[] voters;
@@ -93,10 +93,9 @@ contract Marriage is Ownable {
 			status: "pendingDepositFromUser2",
 			startTime: 0,
 			ipfsHash: "",
-			divorceReporterAddress: address(0),
-			divorceDisputerAddress: address(0)
+			divorceReporterAddress: address(0)
 		});
-		userAddressToId[msg.sender] = coupleCount;
+		//userAddressToId[msg.sender] = coupleCount;
 		emit User1DepositReceived(coupleCount, msg.sender, msg.value);
 	}
 
@@ -191,7 +190,7 @@ contract Marriage is Ownable {
 			msg.sender != couple.divorceReporterAddress,
 			"Cannot dispute divorce because you are the reporter of the divorce!"
 		);
-		couple.divorceDisputerAddress = msg.sender;
+
 		// Check if current time is within the 7-day period after starttime
 		require(
 			block.timestamp <= couple.startTime + 7 days,
@@ -201,6 +200,7 @@ contract Marriage is Ownable {
 		// Initialize struct and link id to couple id
 		disputedDivorces[couple.id] = DisputedDivorceDetails({
 			id: couple.id,
+			divorceDisputerAddress: msg.sender,
 			votesForDivorce: 0,
 			votesAgainstDivorce: 0,
 			voters: new address[](0)
@@ -282,8 +282,6 @@ contract Marriage is Ownable {
 		uint256 quorum = (whitelistedCount / 2) + 1;
 		if (votersCount >= quorum) {
 			tallyVotesByJury(_id);
-		} else {
-			return;
 		}
 	}
 
@@ -291,6 +289,10 @@ contract Marriage is Ownable {
 		require(jury.isJuryEnabled(_id) == true, "Voting has ended.");
 		DisputedDivorceDetails storage divorce = disputedDivorces[_id];
 		CoupleDetails storage couple = couples[_id];
+		require(
+			keccak256(abi.encodePacked(couple.status)) ==
+				keccak256(abi.encodePacked("pendingJuryToResolveDispute"))
+		);
 		if (divorce.votesForDivorce > divorce.votesAgainstDivorce) {
 			payable(couple.divorceReporterAddress).transfer(2 ether);
 			couple
@@ -298,7 +300,7 @@ contract Marriage is Ownable {
 			couple.user1depositAmount = 0;
 			couple.user2depositAmount = 0;
 		} else {
-			payable(couple.divorceDisputerAddress).transfer(1 ether);
+			payable(divorce.divorceDisputerAddress).transfer(1 ether);
 			couple
 				.status = "juryVotesAgainstDivorce, penalized reporter and refunded disputer";
 			couple.user1depositAmount = 0;
