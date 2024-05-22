@@ -373,19 +373,9 @@ const deployedContracts = {
         {
           inputs: [
             {
-              internalType: "bytes32",
-              name: "_user1hashedName",
-              type: "bytes32",
-            },
-            {
               internalType: "address",
               name: "_user1address",
               type: "address",
-            },
-            {
-              internalType: "bytes32",
-              name: "_user2hashedName",
-              type: "bytes32",
             },
             {
               internalType: "address",
@@ -453,11 +443,6 @@ const deployedContracts = {
               type: "uint256",
             },
             {
-              internalType: "bytes32",
-              name: "user1hashedName",
-              type: "bytes32",
-            },
-            {
               internalType: "address",
               name: "user1address",
               type: "address",
@@ -466,11 +451,6 @@ const deployedContracts = {
               internalType: "uint256",
               name: "user1depositAmount",
               type: "uint256",
-            },
-            {
-              internalType: "bytes32",
-              name: "user2hashedName",
-              type: "bytes32",
             },
             {
               internalType: "address",

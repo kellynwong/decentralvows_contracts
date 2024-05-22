@@ -23,10 +23,8 @@ contract Marriage is Ownable {
 	// Struct
 	struct CoupleDetails {
 		uint256 id;
-		bytes32 user1hashedName;
 		address user1address;
 		uint256 user1depositAmount;
-		bytes32 user2hashedName;
 		address user2address;
 		uint256 user2depositAmount;
 		string status;
@@ -50,12 +48,10 @@ contract Marriage is Ownable {
 
 	// Functionality related to marriages
 	// ==========================================================
-	function addUser1(
-		bytes32 _user1hashedName,
-		address _user1address,
-		bytes32 _user2hashedName,
-		address _user2address
-	) public payable {
+	function addUser1(address _user1address, address _user2address)
+		public
+		payable
+	{
 		// Check if user is duplicated user
 		uint256 ID = userAddressToId[msg.sender];
 		require(
@@ -77,10 +73,8 @@ contract Marriage is Ownable {
 		userAddressToId[msg.sender] = coupleCount;
 		couples[coupleCount] = CoupleDetails({
 			id: coupleCount,
-			user1hashedName: _user1hashedName,
 			user1address: _user1address,
 			user1depositAmount: msg.value,
-			user2hashedName: _user2hashedName,
 			user2address: _user2address,
 			user2depositAmount: 0,
 			status: "pendingDepositFromUser2",

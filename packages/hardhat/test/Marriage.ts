@@ -2,13 +2,12 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Marriage, Jury } from "../typechain-types";
 
-const USER1HASHEDNAME = ethers.encodeBytes32String("elephant");
 const USER1ADDRESS = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
-const USER2HASHEDNAME = ethers.encodeBytes32String("tiger");
+
 const USER2ADDRESS = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC";
-const USER3HASHEDNAME = ethers.encodeBytes32String("lion");
+
 const USER3ADDRESS = "0x90F79bf6EB2c4f870365E785982E1f101E93b906";
-const USER4HASHEDNAME = ethers.encodeBytes32String("zebra");
+
 const USER4ADDRESS = "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65";
 const JURY1ADDRESS = "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc";
 const JURY2ADDRESS = "0x976EA74026E726554dB657fA54763abd0C3a0aa9";
@@ -58,69 +57,51 @@ describe("Marriage", () => {
   describe("Adding of User1", () => {
     it("Should revert transaction if wallet address is identified as part of another couple", async () => {
       // Register User1 as couple ID 1
-      await marriage.connect(user1).addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, {
+      await marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, {
         value: ethers.parseEther("5"),
       }),
         expect(await marriage.coupleCount()).to.equal(1);
       // Register User1 again
       await expect(
-        marriage
-          .connect(user1)
-          .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") }),
+        marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("5") }),
       ).to.be.revertedWith("Cannot add User1. Wallet address identified as part of another couple.");
     });
 
     it("Should revert transaction if wallet address is not the same as the address registered at front end", async () => {
       await expect(
-        marriage
-          .connect(user3)
-          .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") }),
+        marriage.connect(user3).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("5") }),
       ).to.be.revertedWith("Cannot add User1. Wallet address is not the same as the address registered at front end.");
     });
 
     it("Should revert transaction if deposit amount is less than 5 eth", async () => {
       await expect(
-        marriage
-          .connect(user1)
-          .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("1") }),
+        marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("1") }),
       ).to.be.revertedWith("Cannot add User1. Insufficient deposit.");
     });
 
     it("Should increase coupleCount to 1 when addUser1 is called", async () => {
-      await marriage
-        .connect(user1)
-        .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("5") });
       expect(await marriage.coupleCount()).to.equal(1);
     });
 
     it("Should increase coupleCount to 2 when addUser1 is called twice, once by User1 and second time by User3", async () => {
-      await marriage
-        .connect(user1)
-        .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
-      await marriage
-        .connect(user3)
-        .addUser1(USER3HASHEDNAME, USER3ADDRESS, USER4HASHEDNAME, USER4ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user3).addUser1(USER3ADDRESS, USER4ADDRESS, { value: ethers.parseEther("5") });
       expect(await marriage.coupleCount()).to.equal(2);
     });
 
     it("Should add User1 address to mapping correctly", async () => {
-      await marriage
-        .connect(user1)
-        .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("5") });
       expect(await marriage.userAddressToId(user1.address)).to.equal(1);
     });
 
     it("Should initialize CoupleDetails struct correctly when addUser1 is called", async () => {
-      await marriage
-        .connect(user1)
-        .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("5") });
       // Use "()" and not "[]" to access
       const couple = await marriage.couples(1);
       expect(couple.id).to.equal(1);
-      expect(couple.user1hashedName).to.equal(USER1HASHEDNAME);
       expect(couple.user1address).to.equal(USER1ADDRESS);
       expect(couple.user1depositAmount).to.equal(ethers.parseEther("5"));
-      expect(couple.user2hashedName).to.equal(USER2HASHEDNAME);
       expect(couple.user2address).to.equal(USER2ADDRESS);
       expect(couple.user2depositAmount).to.equal(0);
       expect(couple.status).to.equal("pendingDepositFromUser2");
@@ -133,9 +114,7 @@ describe("Marriage", () => {
 
   describe("Adding of User2", () => {
     beforeEach(async () => {
-      await marriage
-        .connect(user1)
-        .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("5") });
     });
 
     // Checks which are similar to addUser1 not tested as already tested above
@@ -149,9 +128,7 @@ describe("Marriage", () => {
     });
 
     it("Should add User1, User2, User3 and User4 addresses to mapping correctly", async () => {
-      await marriage
-        .connect(user3)
-        .addUser1(USER3HASHEDNAME, USER3ADDRESS, USER4HASHEDNAME, USER4ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user3).addUser1(USER3ADDRESS, USER4ADDRESS, { value: ethers.parseEther("5") });
       await marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") });
       await marriage.connect(user4).addUser2(2, { value: ethers.parseEther("5") });
       expect(await marriage.userAddressToId(user1.address)).to.equal(1);
@@ -163,9 +140,7 @@ describe("Marriage", () => {
 
   describe("Retrieval of Deposit by User1", () => {
     beforeEach(async () => {
-      await marriage
-        .connect(user1)
-        .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("5") });
     });
 
     it("Should revert transaction if requesting wallet is not registered", async () => {
@@ -205,9 +180,7 @@ describe("Marriage", () => {
 
   describe("Submit Divorce", () => {
     beforeEach(async () => {
-      await marriage
-        .connect(user1)
-        .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("5") });
     });
 
     it("Should revert transaction if wallet address cannot be found", async () => {
@@ -239,9 +212,7 @@ describe("Marriage", () => {
 
   describe("Accept Divorce", () => {
     beforeEach(async () => {
-      await marriage
-        .connect(user1)
-        .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("5") });
       await marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") });
       await marriage.connect(user1).submitDivorce(IPFSHASH);
     });
@@ -303,9 +274,7 @@ describe("Marriage", () => {
 
   describe("Dispute Divorce", () => {
     beforeEach(async () => {
-      await marriage
-        .connect(user1)
-        .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("5") });
       await marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") });
       await marriage.connect(user1).submitDivorce(IPFSHASH);
     });
@@ -368,12 +337,8 @@ describe("Marriage", () => {
   describe("Voting by Jury", () => {
     beforeEach(async () => {
       // Marry 2 couples
-      await marriage
-        .connect(user1)
-        .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
-      await marriage
-        .connect(user3)
-        .addUser1(USER3HASHEDNAME, USER3ADDRESS, USER4HASHEDNAME, USER4ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user3).addUser1(USER3ADDRESS, USER4ADDRESS, { value: ethers.parseEther("5") });
       await marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") });
       await marriage.connect(user4).addUser2(2, { value: ethers.parseEther("5") });
       // User2 report a divorce between User1 and User2
@@ -465,9 +430,7 @@ describe("Marriage", () => {
     let couple, reporterBalanceBeforeDivorce, disputerBalanceBeforeDivorce, txCost;
     beforeEach(async () => {
       // Marry 2 couples
-      await marriage
-        .connect(user1)
-        .addUser1(USER1HASHEDNAME, USER1ADDRESS, USER2HASHEDNAME, USER2ADDRESS, { value: ethers.parseEther("5") });
+      await marriage.connect(user1).addUser1(USER1ADDRESS, USER2ADDRESS, { value: ethers.parseEther("5") });
       await marriage.connect(user2).addUser2(1, { value: ethers.parseEther("5") });
       // User1 reports a divorce
       await marriage.connect(user1).submitDivorce(IPFSHASH);
