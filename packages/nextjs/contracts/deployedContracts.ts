@@ -275,7 +275,7 @@ const deployedContracts = {
       },
     },
     Marriage: {
-      address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      address: "0x0165878A594ca255338adfa4d48449f69242Eb8F",
       abi: [
         {
           inputs: [
@@ -311,60 +311,108 @@ const deployedContracts = {
           anonymous: false,
           inputs: [
             {
-              indexed: true,
-              internalType: "uint256",
-              name: "id",
-              type: "uint256",
-            },
-            {
-              indexed: true,
-              internalType: "address",
-              name: "user1address",
-              type: "address",
+              indexed: false,
+              internalType: "string",
+              name: "status",
+              type: "string",
             },
             {
               indexed: false,
               internalType: "uint256",
-              name: "user1depositAmount",
+              name: "divorceReportTime",
               type: "uint256",
             },
+            {
+              indexed: false,
+              internalType: "string",
+              name: "ipfsHash",
+              type: "string",
+            },
+            {
+              indexed: false,
+              internalType: "address",
+              name: "divorceReporterAddress",
+              type: "address",
+            },
           ],
-          name: "User1DepositReceived",
+          name: "SubmitDivorce",
           type: "event",
         },
         {
           anonymous: false,
           inputs: [
             {
-              indexed: true,
+              indexed: false,
               internalType: "uint256",
               name: "id",
               type: "uint256",
             },
             {
-              indexed: true,
+              indexed: false,
               internalType: "address",
-              name: "user2address",
+              name: "user1Address",
               type: "address",
             },
             {
               indexed: false,
               internalType: "uint256",
-              name: "user2depositAmount",
+              name: "user1DepositAmount",
               type: "uint256",
             },
+            {
+              indexed: false,
+              internalType: "address",
+              name: "user2Address",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "user2DepositAmount",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "string",
+              name: "status",
+              type: "string",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "marriageStartTime",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "divorceReportTime",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "string",
+              name: "ipfsHash",
+              type: "string",
+            },
+            {
+              indexed: false,
+              internalType: "address",
+              name: "divorceReporterAddress",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "address",
+              name: "divorceDisputerAddress",
+              type: "address",
+            },
           ],
-          name: "User2DepositReceived",
+          name: "UpdateCoupleDetails",
           type: "event",
         },
         {
-          inputs: [
-            {
-              internalType: "uint256",
-              name: "_id",
-              type: "uint256",
-            },
-          ],
+          inputs: [],
           name: "acceptDivorce",
           outputs: [],
           stateMutability: "nonpayable",
@@ -372,11 +420,6 @@ const deployedContracts = {
         },
         {
           inputs: [
-            {
-              internalType: "address",
-              name: "_user1address",
-              type: "address",
-            },
             {
               internalType: "address",
               name: "_user2address",
@@ -469,7 +512,12 @@ const deployedContracts = {
             },
             {
               internalType: "uint256",
-              name: "disputeStartTime",
+              name: "marriageStartTime",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "divorceReportTime",
               type: "uint256",
             },
             {
@@ -492,6 +540,13 @@ const deployedContracts = {
           type: "function",
         },
         {
+          inputs: [],
+          name: "disputeDivorce",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
           inputs: [
             {
               internalType: "uint256",
@@ -499,9 +554,91 @@ const deployedContracts = {
               type: "uint256",
             },
           ],
-          name: "disputeDivorce",
-          outputs: [],
-          stateMutability: "nonpayable",
+          name: "getCoupleDetails",
+          outputs: [
+            {
+              components: [
+                {
+                  internalType: "uint256",
+                  name: "id",
+                  type: "uint256",
+                },
+                {
+                  internalType: "address",
+                  name: "user1address",
+                  type: "address",
+                },
+                {
+                  internalType: "uint256",
+                  name: "user1depositAmount",
+                  type: "uint256",
+                },
+                {
+                  internalType: "address",
+                  name: "user2address",
+                  type: "address",
+                },
+                {
+                  internalType: "uint256",
+                  name: "user2depositAmount",
+                  type: "uint256",
+                },
+                {
+                  internalType: "string",
+                  name: "status",
+                  type: "string",
+                },
+                {
+                  internalType: "uint256",
+                  name: "marriageStartTime",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "divorceReportTime",
+                  type: "uint256",
+                },
+                {
+                  internalType: "string",
+                  name: "ipfsHash",
+                  type: "string",
+                },
+                {
+                  internalType: "address",
+                  name: "divorceReporterAddress",
+                  type: "address",
+                },
+                {
+                  internalType: "address",
+                  name: "divorceDisputerAddress",
+                  type: "address",
+                },
+              ],
+              internalType: "struct Marriage.CoupleDetails",
+              name: "",
+              type: "tuple",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "_userAddress",
+              type: "address",
+            },
+          ],
+          name: "getId",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "_id",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
           type: "function",
         },
         {

@@ -33,8 +33,23 @@ const deployYourContract: DeployFunction = async function (hre: HardhatRuntimeEn
   });
 
   // Get the deployed contract to interact with it after deploying.
-  await hre.ethers.getContract<Contract>("Jury", deployer);
+  const jury = await hre.ethers.getContract<Contract>("Jury", deployer);
   console.log("Deployer's Address", deployer);
+
+  // List of addresses to be whitelisted - hh account 11 to 15
+  const juryAddresses = [
+    "0x71bE63f3384f5fb98995898A86B02Fb2426c5788",
+    "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a",
+    "0x1CBd3b2770909D4e10f157cABC84C7264073C9Ec",
+    "0xdF3e18d64BC6A983f673Ab319CCaE4f1a57C7097",
+    "0xcd3B766CCDd6AE721141F452C550Ca635964ce71",
+  ];
+  // Whitelist each address
+  for (const address of juryAddresses) {
+    const tx = await jury.addToWhitelist(address);
+    await tx.wait();
+    console.log(`Whitelisted ${address}`);
+  }
 };
 
 export default deployYourContract;
