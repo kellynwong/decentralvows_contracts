@@ -287,8 +287,10 @@ contract Marriage is Ownable {
 			"Deadline to dispute divorce has passed. Divorce has automatically been escalated to jury for voting and resolution."
 		);
 		couple.status = "pendingJuryToResolveDispute";
+		couple.divorceDisputerAddress = msg.sender;
 		// Initialize struct and link id to couple id
-		jury.addDisputedDivorceDetails(ID);
+
+		jury.addDisputeDivorceDetails(ID, couple.ipfsHash);
 	}
 
 	// Functionality related to conclusion of disputed divorce

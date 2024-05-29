@@ -38,11 +38,11 @@ const deployYourContract: DeployFunction = async function (hre: HardhatRuntimeEn
 
   // List of addresses to be whitelisted - hh account 11 to 15
   const juryAddresses = [
-    "0x71bE63f3384f5fb98995898A86B02Fb2426c5788",
-    "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a",
-    "0x1CBd3b2770909D4e10f157cABC84C7264073C9Ec",
-    "0xdF3e18d64BC6A983f673Ab319CCaE4f1a57C7097",
-    "0xcd3B766CCDd6AE721141F452C550Ca635964ce71",
+    "0x71be63f3384f5fb98995898a86b02fb2426c5788",
+    "0xfabb0ac9d68b0b445fb7357272ff202c5651694a",
+    "0x1cbd3b2770909d4e10f157cabc84c7264073c9ec",
+    "0xdf3e18d64bc6a983f673ab319ccae4f1a57c7097",
+    "0xcd3b766ccdd6ae721141f452c550ca635964ce71",
   ];
   // Whitelist each address
   for (const address of juryAddresses) {

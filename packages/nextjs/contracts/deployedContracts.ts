@@ -45,11 +45,16 @@ const deployedContracts = {
           inputs: [
             {
               internalType: "uint256",
-              name: "_id",
+              name: "_coupleId",
               type: "uint256",
             },
+            {
+              internalType: "string",
+              name: "_ipfsHash",
+              type: "string",
+            },
           ],
-          name: "addDisputedDivorceDetails",
+          name: "addDisputeDivorceDetails",
           outputs: [],
           stateMutability: "nonpayable",
           type: "function",
@@ -94,12 +99,66 @@ const deployedContracts = {
               type: "uint256",
             },
           ],
-          name: "disputedDivorces",
+          name: "coupleIdToDetails",
           outputs: [
             {
               internalType: "uint256",
-              name: "id",
+              name: "disputeDivorceCount",
               type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "coupleId",
+              type: "uint256",
+            },
+            {
+              internalType: "string",
+              name: "ipfsHash",
+              type: "string",
+            },
+            {
+              internalType: "uint256",
+              name: "votesForDivorce",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "votesAgainstDivorce",
+              type: "uint256",
+            },
+            {
+              internalType: "bool",
+              name: "votingIsLive",
+              type: "bool",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          name: "disputeCountToDetails",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "disputeDivorceCount",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "coupleId",
+              type: "uint256",
+            },
+            {
+              internalType: "string",
+              name: "ipfsHash",
+              type: "string",
             },
             {
               internalType: "uint256",
@@ -122,6 +181,19 @@ const deployedContracts = {
         },
         {
           inputs: [],
+          name: "disputeDivorceCount",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
           name: "getJuryCount",
           outputs: [
             {
@@ -137,7 +209,7 @@ const deployedContracts = {
           inputs: [
             {
               internalType: "uint256",
-              name: "_id",
+              name: "_coupleId",
               type: "uint256",
             },
           ],
@@ -156,7 +228,7 @@ const deployedContracts = {
           inputs: [
             {
               internalType: "uint256",
-              name: "_id",
+              name: "_coupleId",
               type: "uint256",
             },
           ],
@@ -201,7 +273,7 @@ const deployedContracts = {
           inputs: [
             {
               internalType: "uint256",
-              name: "_id",
+              name: "_coupleId",
               type: "uint256",
             },
             {
