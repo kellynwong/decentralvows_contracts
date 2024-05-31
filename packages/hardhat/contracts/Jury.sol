@@ -52,6 +52,9 @@ contract Jury is Ownable {
 	function recordVotesByJury(uint256 _coupleId, uint256 _vote) public {
 		DisputeDivorceDetails storage divorce = coupleIdToDetails[_coupleId];
 
+		// Retrieve associated divorceCount
+		uint256 divorceCount = divorce.disputeDivorceCount;
+
 		// Check if address is jury member
 		require(
 			checkAddressIsJury(msg.sender),
@@ -79,6 +82,7 @@ contract Jury is Ownable {
 		}
 		// Record voter
 		divorce.voters.push(msg.sender);
+
 		// Calculate quorum
 		DisputeDivorceDetails storage divorceAfterVoting = coupleIdToDetails[
 			_coupleId
@@ -90,16 +94,10 @@ contract Jury is Ownable {
 			divorceAfterVoting.votingIsLive = false;
 			emit quorumReached(_coupleId);
 		}
-	}
 
-	// Get results of voting
-	function getResults(uint256 _coupleId) public view returns (uint256) {
-		DisputeDivorceDetails storage divorce = coupleIdToDetails[_coupleId];
-		if (divorce.votesForDivorce > divorce.votesAgainstDivorce) {
-			return 0;
-		} else {
-			return 1;
-		}
+		// Update both mappings
+		disputeCountToDetails[divorceCount] = divorce;
+		coupleIdToDetails[_coupleId] = divorce;
 	}
 
 	// Functionality related to managing jury
@@ -120,6 +118,18 @@ contract Jury is Ownable {
 
 	// Helper Functions
 	// ==========================================================
+
+	// Get results of voting
+	function getResults(uint256 _coupleId) public view returns (uint256) {
+		DisputeDivorceDetails storage divorce = coupleIdToDetails[_coupleId];
+		require(divorce.votingIsLive == false, "Voting is still ongoing");
+		if (divorce.votesForDivorce > divorce.votesAgainstDivorce) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+
 	// Check if address is whitelisted as jury
 	function checkAddressIsJury(address account) public view returns (bool) {
 		return whitelist[account];
