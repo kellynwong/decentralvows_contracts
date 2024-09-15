@@ -21,7 +21,7 @@ The DecentralVows smart contracts form the backbone of our decentralized marriag
 
 ## 🚀 Getting Started
 
-This project was bootstrapped with [Hardhat Starter Kit](https://github.com/scaffold-eth/scaffold-eth-2).
+This project was bootstrapped with [Scaffold-ETH 2](https://github.com/scaffold-eth/scaffold-eth-2).
 
 1. Clone the repository
 2. Install dependencies: `npm install`
