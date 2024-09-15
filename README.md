@@ -1,81 +1,82 @@
-# 🏗 Scaffold-ETH 2
+# DecentralVows Smart Contracts 📜💍
 
-<h4 align="center">
-  <a href="https://docs.scaffoldeth.io">Documentation</a> |
-  <a href="https://scaffoldeth.io">Website</a>
-</h4>
+This repository contains the Solidity smart contracts for DecentralVows, a blockchain-based application designed to strengthen marriage commitments through smart contracts and financial incentives.
 
-🧪 An open-source, up-to-date toolkit for building decentralized applications (dapps) on the Ethereum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
+## 📖 Overview
 
-⚙️ Built using NextJS, RainbowKit, Hardhat, Wagmi, Viem, and Typescript.
+The DecentralVows smart contracts form the backbone of our decentralized marriage commitment system. They handle the core functionalities of vow submissions, reward distributions, and the divorce process.
 
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
-- 🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
+## 🧠 Smart Contracts
 
-![Debug Contracts tab](https://github.com/scaffold-eth/scaffold-eth-2/assets/55535804/b237af0c-5027-4849-a5c1-2e31495cccb1)
+1. **Marriage.sol**: Manages marriage commitments and couple details.
+2. **Jury.sol**: Handles the jury system for dispute resolution.
+3. **Rewards.sol**: Manages the reward system and distribution of funds.
 
-## Requirements
+## 🛠 Key Features
 
-Before you begin, you need to install the following tools:
+- 💑 **Marriage Registration**: Couples can register their marriage by depositing ETH.
+- 💰 **Reward System**: Manages the distribution of rewards to committed couples.
+- ⚖️ **Divorce Process**: Handles the reporting and resolution of divorces.
+- 👥 **Jury Voting**: Implements a jury system for dispute resolution.
 
-- [Node (>= v18.17)](https://nodejs.org/en/download/)
-- Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
-- [Git](https://git-scm.com/downloads)
+## 🚀 Getting Started
 
-## Quickstart
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Compile contracts: `npx hardhat compile`
+4. Run tests: `npx hardhat test`
 
-To get started with Scaffold-ETH 2, follow the steps below:
+## 📚 Contract Details
 
-1. Clone this repo & install dependencies
+### Marriage.sol
+- Manages couple registrations
+- Tracks marriage statuses
+- Handles the initial ETH deposits
 
-```
-git clone https://github.com/scaffold-eth/scaffold-eth-2.git
-cd scaffold-eth-2
-yarn install
-```
+### Jury.sol
+- Implements jury selection process
+- Manages voting on disputed divorces
+- Determines divorce outcomes based on jury decisions
 
-2. Run a local network in the first terminal:
+### Rewards.sol
+- Tracks reward details for each divorce case
+- Calculates rewards per eligible address
+- Distributes rewards to committed couples
 
-```
-yarn chain
-```
+## 🔗 Integration with Frontend
 
-This command starts a local Ethereum network using Hardhat. The network runs on your local machine and can be used for testing and development. You can customize the network configuration in `hardhat.config.ts`.
+These smart contracts work in tandem with the DecentralVows frontend. For the frontend repository and more details on the full application, visit:
 
-3. On a second terminal, deploy the test contract:
+[DecentralVows Frontend](https://github.com/kellynwong/decentralvows_client)
 
-```
-yarn deploy
-```
+## 🛠 Development and Testing
 
-This command deploys a test smart contract to the local network. The contract is located in `packages/hardhat/contracts` and can be modified to suit your needs. The `yarn deploy` command uses the deploy script located in `packages/hardhat/deploy` to deploy the contract to the network. You can also customize the deploy script.
+We use Hardhat for development and testing. To run the test suite:
+- bash
+- npx hardhat test
 
-4. On a third terminal, start your NextJS app:
+For deploying to a testnet:
 
-```
-yarn start
-```
+1. Set up your environment variables in a `.env` file:
+   ```
+   PRIVATE_KEY=your_private_key
+   INFURA_PROJECT_ID=your_infura_project_id
+   ```
 
-Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. You can tweak the app config in `packages/nextjs/scaffold.config.ts`.
+2. Run the deployment script:
+   ```bash
+   npx hardhat run scripts/deploy.js --network rinkeby
+   ```
 
-**What's next**:
+## 🤝 Contributing
 
-- Edit your smart contract `YourContract.sol` in `packages/hardhat/contracts`
-- Edit your frontend homepage at `packages/nextjs/app/page.tsx`. For guidance on [routing](https://nextjs.org/docs/app/building-your-application/routing/defining-routes) and configuring [pages/layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts) checkout the Next.js documentation.
-- Edit your deployment scripts in `packages/hardhat/deploy`
-- Edit your smart contract test in: `packages/hardhat/test`. To run test use `yarn hardhat:test`
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.
 
-## Documentation
+## 📄 License
 
-Visit our [docs](https://docs.scaffoldeth.io) to learn how to start building with Scaffold-ETH 2.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-To know more about its features, check out our [website](https://scaffoldeth.io).
+## ⚠️ Disclaimer
 
-## Contributing to Scaffold-ETH 2
+These smart contracts are part of a concept application and should not be used in production without thorough auditing and legal consultation. They do not substitute for legal marriage processes.
 
-We welcome contributions to Scaffold-ETH 2!
-
-Please see [CONTRIBUTING.MD](https://github.com/scaffold-eth/scaffold-eth-2/blob/main/CONTRIBUTING.md) for more information and guidelines for contributing to Scaffold-ETH 2.
